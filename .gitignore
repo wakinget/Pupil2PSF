@@ -1,6 +1,39 @@
-# Include your project-specific ignores in this file
-# Read about how to use .gitignore: https://help.github.com/articles/ignoring-files
-# Useful .gitignore templates: https://github.com/github/gitignore
-node_modules
-dist
-.cache
+# -----------------------
+# Pupil2PSF .gitignore
+# -----------------------
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE settings
+.idea/
+.vscode/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+
+# Node-related (if you ever use npm)
+node_modules/
+
+# Python virtual environments (for PyCharm’s Python interpreter tracking)
+.venv/
+venv/
+
+# Build or cache artifacts (future-proofing)
+dist/
+build/
+__pycache__/
+
+# Backup or exported images
+*.bak
+*.old
+*.png~
+*.jpg~
+
+# Environment and private keys (if any)
+.env
+.env.*
