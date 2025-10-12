@@ -1,0 +1,130 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background-color: #f5f5f5;
+}
+
+header {
+  padding: 1rem;
+  background-color: #333;
+  color: white;
+  text-align: center;
+}
+
+#layout {
+  display: flex;
+  height: calc(100vh - 120px);
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+#toolbar {
+  width: 200px;
+  padding: 1rem;
+  background-color: #ddd;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tool-options {
+  margin-top: 10px;
+}
+
+.tool-options.hidden {
+  display: none;
+}
+
+#toolbar button.active {
+  background-color: #ddd;
+  border: 2px solid #333;
+}
+
+
+#pupil-panel,
+#psf-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 1rem;
+}
+
+canvas {
+  border: 1px solid #333;
+}
+
+#controls,
+.slider-group {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.psf-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+
+.psf-display {
+  display: flex;
+  align-items: stretch;  /* make colorbar match PSF height */
+  gap: 10px;             /* space between canvases */
+}
+
+#psfCanvas {
+  border: 1px solid #ccc;
+}
+
+.psf-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.psf-title {
+  margin: 0 0 4px 0;
+}
+
+.psf-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;      /* wraps nicely on narrow screens */
+  margin-bottom: 2px;
+}
+
+/* Make the view a column so toggles sit under the canvases,
+   aligned to the same left edge as the PSF canvas */
+.psf-view {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;   /* <- keeps toggles left-aligned to canvas edge */
+  gap: 10px;                 /* distance between canvases and toggles */
+}
+
+/* Row that holds the two canvases side-by-side */
+.psf-row {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+
+/* Nice spacing between the two toggles on one line */
+.psf-toggles {
+  display: flex;
+  align-items: center;
+  gap: 18px;                 /* “comfortable distance” between Auto & Turbo */
+  user-select: none;
+}
+
+/* Keep colorbar clean (no borders/outlines) */
+#colorbarCanvas {
+  border: none;
+  outline: none;
+  image-rendering: pixelated;
+}

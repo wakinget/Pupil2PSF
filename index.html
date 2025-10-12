@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pupil-to-PSF Visualizer</title>
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Fabric.js UMD build (v5.5.2) -->
+  <script src="https://cdn.jsdelivr.net/npm/fabric@5.5.2/dist/fabric.min.js"></script>
+
+  <!-- Shim CommonJS so fft.js (minified CJS) won’t throw -->
+  <script>
+    (function () {
+      var m = { exports: {} };
+      // Provide both in case a lib references either symbol
+      window.module = m;
+      window.exports = m.exports;
+    })();
+  </script>
+
+  <!-- FFT.js (v4.0.4) -->
+  <script src="https://cdn.jsdelivr.net/npm/fft.js@4.0.4/lib/fft.min.js"></script>
+
+  <!-- Normalize export to a single global and clean up -->
+  <script>
+    window.FFT = window.FFT || (window.module && window.module.exports) || window.exports;
+    delete window.module;
+    delete window.exports;
+  </script>
+
+  <!-- Custom Script -->
+  <script src="js/script.js" defer></script>
+
+
+</head>
+<body>
+
+  <header>
+    <h1>Pupil-to-PSF Visualizer</h1>
+    <p>Draw your custom aperture mask using the tools on the left, then simulate the PSF on the right.</p>
+  </header>
+
+  <main id="layout">
+    <!-- Toolbar -->
+    <aside id="toolbar">
+      <h3>Tools</h3>
+      <button id="tool-circle" onclick="selectTool('circle')">Circle</button>
+      <button id="tool-rect" onclick="selectTool('rect')">Rectangle</button>
+      <button id="tool-line" onclick="selectTool('line')">Line</button>
+      <button id="tool-scribble" onclick="selectTool('scribble')">Scribble</button>
+      <button id="tool-point" onclick="selectTool('point')">Point</button>
+
+
+      <!-- Context-sensitive tool options -->
+      <div id="tool-options">
+        <!-- Line tool options -->
+        <div id="line-options" class="tool-options hidden slider-group">
+          <label for="lineWidthSlider">Line Width</label>
+          <input type="range" id="lineWidthSlider" min="1" max="20" value="5">
+        </div>
+
+        <!-- Scribble tool options -->
+        <div id="scribble-options" class="tool-options hidden slider-group">
+          <label for="brushSizeSlider">Brush Size</label>
+          <input type="range" id="brushSizeSlider" min="1" max="50" value="5">
+        </div>
+      </div>
+
+
+      <div class="slider-group">
+        <label for="transmissionSlider">Transmission</label>
+        <input type="range" id="transmissionSlider" min="0" max="255" value="255">
+      </div>
+
+      <hr>
+
+      <button onclick="invertCanvas()">Invert</button>
+      <button onclick="resetCanvas()">Reset</button>
+    </aside>
+
+    <!-- Pupil Canvas Section -->
+    <section id="pupil-panel">
+      <h2>Pupil Canvas</h2>
+      <canvas id="pupilCanvas" width="512" height="512"></canvas>
+      <div id="controls">
+        <label for="resolutionSlider">Resolution</label>
+        <input type="range" id="resolutionSlider" min="16" max="2048" step="16" value="512">
+        <span id="resolutionLabel">512 × 512</span>
+        <button id="renderButton" onclick="renderPSF()">Render PSF</button>
+      </div>
+    </section>
+
+    <!-- PSF Display Section -->
+    <section id="psf-panel" class="psf-panel">
+      <h3 class="psf-title">Point Spread Function</h3>
+
+      <!-- Controls under title -->
+      <div class="psf-controls">
+        <label for="psfScaling">Scaling:</label>
+        <select id="psfScaling">
+          <option value="linear">Linear</option>
+          <option value="sqrt">Sqrt</option>
+          <option value="log">Log</option>
+          <option value="db">dB</option>
+        </select>
+
+        <label for="psfColormap">Colormap:</label>
+        <select id="psfColormap">
+          <option value="gray">Grayscale</option>
+          <option value="hot">Hot</option>
+        </select>
+      </div>
+
+      <!-- View = canvases row + toggles row -->
+      <div class="psf-view">
+        <div class="psf-row">
+          <canvas id="psfCanvas" width="512" height="512"></canvas>
+          <canvas id="colorbarCanvas" width="70" height="512"></canvas>
+        </div>
+
+        <!-- Left-aligned to the PSF canvas edge -->
+        <div class="psf-toggles">
+          <label><input type="checkbox" id="autoUpdateToggle"> Auto-update</label>
+          <label id="turboContainer" style="display:none;">
+            <input type="checkbox" id="turboToggle"> Turbo (live while dragging)
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hidden canvas used for rasterizing pupil at high resolution -->
+    <canvas id="hiddenRasterCanvas" width="512" height="512" style="display:none;"></canvas>
+
+
+  </main>
+</body>
+</html>
