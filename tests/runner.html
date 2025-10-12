@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pupil2PSF Test Runner</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #007acc;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #555;
+      margin-top: 30px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+    #test-output {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 20px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 200px;
+    }
+    .test-pass {
+      color: #22863a;
+    }
+    .test-fail {
+      color: #cb2431;
+      font-weight: bold;
+    }
+    .test-error {
+      color: #6a737d;
+      margin-left: 20px;
+      font-size: 12px;
+      font-style: italic;
+    }
+    .test-summary-pass {
+      margin-top: 20px;
+      padding: 10px;
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    .test-summary-fail {
+      margin-top: 20px;
+      padding: 10px;
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      border-radius: 4px;
+      font-weight: bold;
+    }
+    button {
+      background: #007acc;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #005a9e;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .info {
+      background: #e7f3ff;
+      border-left: 4px solid #007acc;
+      padding: 12px;
+      margin: 20px 0;
+      color: #004085;
+    }
+    .loading {
+      color: #666;
+      font-style: italic;
+    }
+  </style>
+
+  <!-- FFT.js library (required by fft.js module) -->
+  <script>
+    // Shim CommonJS so fft.js (minified CJS) won't throw
+    (function () {
+      var m = { exports: {} };
+      window.module = m;
+      window.exports = m.exports;
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/fft.js@4.0.4/lib/fft.min.js"></script>
+  <script>
+    window.FFT = window.FFT || (window.module && window.module.exports) || window.exports;
+    delete window.module;
+    delete window.exports;
+  </script>
+</head>
+<body>
+  <h1>Pupil2PSF Test Suite</h1>
+
+  <div class="info">
+    <strong>Test Philosophy:</strong> Lightweight browser tests with no build tools.
+    Tests verify FFT correctness (Parseval's theorem, fftshift, non-negativity) and
+    tone mapping behavior.
+  </div>
+
+  <button id="run-tests" onclick="runAllTests()">Run All Tests</button>
+
+  <h2>Test Results</h2>
+  <div id="test-output">
+    <span class="loading">Click "Run All Tests" to start...</span>
+  </div>
+
+  <h2>About</h2>
+  <p>
+    This test suite validates the core mathematical functions of Pupil2PSF:
+  </p>
+  <ul>
+    <li><strong>Parseval's Theorem</strong>: Energy conservation in FFT (sum(|F|²) ≈ sum(|x|²))</li>
+    <li><strong>Non-negativity</strong>: Intensity values are ≥ 0</li>
+    <li><strong>NaN/Inf checks</strong>: No invalid floating-point values</li>
+    <li><strong>fftshift correctness</strong>: DC component properly centered</li>
+    <li><strong>Tone mapping</strong>: Monotonic mapping and valid pixel ranges</li>
+  </ul>
+
+  <script type="module">
+    import { runFFTTests } from './fft.spec.js';
+
+    window.runAllTests = async function() {
+      const output = document.getElementById('test-output');
+      const button = document.getElementById('run-tests');
+
+      // Clear previous results
+      output.innerHTML = '<span class="loading">Running tests...</span>';
+      button.disabled = true;
+
+      try {
+        // Run FFT tests
+        const results = await runFFTTests();
+
+        button.disabled = false;
+
+        // Display summary in title
+        if (results.failed === 0) {
+          document.title = `✓ All tests passed - Pupil2PSF Test Runner`;
+        } else {
+          document.title = `✗ ${results.failed} failed - Pupil2PSF Test Runner`;
+        }
+      } catch (err) {
+        output.innerHTML = `<div class="test-fail">Fatal error: ${err.message}</div>`;
+        button.disabled = false;
+        console.error(err);
+      }
+    };
+
+    // Auto-run tests on load (optional - comment out if you prefer manual trigger)
+    window.addEventListener('load', () => {
+      console.log('Auto-running tests on page load...');
+      runAllTests();
+    });
+  </script>
+</body>
+</html>
