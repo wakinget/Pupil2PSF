@@ -119,7 +119,7 @@
   <div class="info">
     <strong>Test Philosophy:</strong> Lightweight browser tests with no build tools.
     Tests verify FFT correctness (Parseval's theorem, fftshift, non-negativity),
-    tone mapping behavior, and tool transmission handling.
+    tone mapping behavior, tool transmission handling, and full-pipeline integration.
   </div>
 
   <button id="run-tests" onclick="runAllTests()">Run All Tests</button>
@@ -146,6 +146,7 @@
   <script type="module">
     import { runFFTTests } from './fft.spec.js';
     import { runToolsTests } from './tools.spec.js';
+    import { runScenariosTests } from './scenarios.spec.js';
 
     window.runAllTests = async function() {
       const output = document.getElementById('test-output');
@@ -159,11 +160,12 @@
         // Run all test suites
         const fftResults = await runFFTTests();
         const toolsResults = await runToolsTests();
+        const scenariosResults = await runScenariosTests();
 
         // Combine results
-        const totalPassed = fftResults.passed + toolsResults.passed;
-        const totalFailed = fftResults.failed + toolsResults.failed;
-        const totalTests = fftResults.total + toolsResults.total;
+        const totalPassed = fftResults.passed + toolsResults.passed + scenariosResults.passed;
+        const totalFailed = fftResults.failed + toolsResults.failed + scenariosResults.failed;
+        const totalTests = fftResults.total + toolsResults.total + scenariosResults.total;
 
         button.disabled = false;
 
