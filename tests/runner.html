@@ -94,6 +94,9 @@
     }
   </style>
 
+  <!-- Fabric.js (required by tools.js module) -->
+  <script src="https://cdn.jsdelivr.net/npm/fabric@5.5.2/dist/fabric.min.js"></script>
+
   <!-- FFT.js library (required by fft.js module) -->
   <script>
     // Shim CommonJS so fft.js (minified CJS) won't throw
@@ -115,8 +118,8 @@
 
   <div class="info">
     <strong>Test Philosophy:</strong> Lightweight browser tests with no build tools.
-    Tests verify FFT correctness (Parseval's theorem, fftshift, non-negativity) and
-    tone mapping behavior.
+    Tests verify FFT correctness (Parseval's theorem, fftshift, non-negativity),
+    tone mapping behavior, and tool transmission handling.
   </div>
 
   <button id="run-tests" onclick="runAllTests()">Run All Tests</button>
@@ -128,7 +131,7 @@
 
   <h2>About</h2>
   <p>
-    This test suite validates the core mathematical functions of Pupil2PSF:
+    This test suite validates the core functions of Pupil2PSF:
   </p>
   <ul>
     <li><strong>Parseval's Theorem</strong>: Energy conservation in FFT (sum(|F|²) ≈ sum(|x|²))</li>
@@ -136,10 +139,13 @@
     <li><strong>NaN/Inf checks</strong>: No invalid floating-point values</li>
     <li><strong>fftshift correctness</strong>: DC component properly centered</li>
     <li><strong>Tone mapping</strong>: Monotonic mapping and valid pixel ranges</li>
+    <li><strong>Transmission helpers</strong>: Color conversion and legacy compatibility</li>
+    <li><strong>Tool lifecycle</strong>: Shape creation with correct transmission values</li>
   </ul>
 
   <script type="module">
     import { runFFTTests } from './fft.spec.js';
+    import { runToolsTests } from './tools.spec.js';
 
     window.runAllTests = async function() {
       const output = document.getElementById('test-output');
@@ -150,16 +156,22 @@
       button.disabled = true;
 
       try {
-        // Run FFT tests
-        const results = await runFFTTests();
+        // Run all test suites
+        const fftResults = await runFFTTests();
+        const toolsResults = await runToolsTests();
+
+        // Combine results
+        const totalPassed = fftResults.passed + toolsResults.passed;
+        const totalFailed = fftResults.failed + toolsResults.failed;
+        const totalTests = fftResults.total + toolsResults.total;
 
         button.disabled = false;
 
         // Display summary in title
-        if (results.failed === 0) {
-          document.title = `✓ All tests passed - Pupil2PSF Test Runner`;
+        if (totalFailed === 0) {
+          document.title = `✓ All ${totalTests} tests passed - Pupil2PSF Test Runner`;
         } else {
-          document.title = `✗ ${results.failed} failed - Pupil2PSF Test Runner`;
+          document.title = `✗ ${totalFailed}/${totalTests} failed - Pupil2PSF Test Runner`;
         }
       } catch (err) {
         output.innerHTML = `<div class="test-fail">Fatal error: ${err.message}</div>`;
