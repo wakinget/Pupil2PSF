@@ -12,7 +12,7 @@ CLAUDE_META:
     commit_format: "[CLAUDE] {summary}"
 -->
 
-This file provides guidance to Claude Code (claude.ai/code) **and** human collaborators for working in this repository. It acts as a living project manager, technical spec, **testing philosophy**, and behavior contract for AI-assisted edits.
+This file is the **project brain** for Pupil2PSF. It guides both humans and Claude Code on goals, conventions, testing, and collaboration. It also clarifies **how to talk to Claude** based on the latest docs: **prefer natural language**, avoid referencing non-existent slash commands, and assume **Sonnet** model usage only.
 
 ---
 
@@ -27,26 +27,18 @@ This file provides guidance to Claude Code (claude.ai/code) **and** human collab
 
 ---
 
-## 🌍 Hosting Plan (GitHub Pages)
+## 🗣️ How to Interact with Claude (per new docs)
 
-This app is a fully static site (HTML/CSS/JS + CDN dependencies), ideal for **GitHub Pages**.
+- **Primary interface: natural language.** Ask for plans, edits, and explanations in plain English.
+- **Avoid assuming slash commands.** Your local Claude Code version may not expose many built-ins. Do **not** rely on commands such as `/describe`, `/refactor`, or `/apply`.
+- If you want to see what slash commands *are* available in your install, run **`/help`** (if present). Otherwise, stick to natural language.
+- **Model selection:** this project assumes **Sonnet-only** access. Do **not** request model switches.
+- **Suggested prompt style (examples):**
+  - “Please draft a step‑by‑step plan to split `js/script.js` into `fft.js`, `ui.js`, `tools.js`, and `main.js` as described in CLAUDE.md.”
+  - “Implement the approved plan now, creating those files and updating `index.html` for ES modules. Keep diffs minimal and commit‑ready.”
+  - “Explain what changed and why. List any risks and how to test quickly.”
 
-**Deployment target**  
-`https://<username>.github.io/Pupil2PSF/`
-
-**Pre‑host checklist**
-- [ ] All resource paths are **relative** (e.g., `./js/main.js`, `./css/style.css`)
-- [ ] `index.html` lives at the repo root
-- [ ] No local file references or build steps required
-- [ ] A concise **README.md** exists (project goal, quick start, screenshots/GIF, Pages link)
-
-**Enabling Pages**
-1. Repo → **Settings → Pages**
-2. **Build and deployment**: *Deploy from a branch*
-3. **Branch**: `main` & **Folder**: `/ (root)`
-4. Save; verify live URL after publish
-
-> Optional later: Map a custom domain by adding a CNAME in DNS to `yourusername.github.io` and setting the same in **Settings → Pages**.
+> Claude should **first produce a clear plan**, then implement. It must keep diffs small, readable, and aligned with this file’s conventions.
 
 ---
 
@@ -88,6 +80,27 @@ Add a crisp **README.md**; host on **GitHub Pages**; sanity‑test in Chrome/Fir
 
 ---
 
+## 🌍 Hosting Plan (GitHub Pages)
+
+This app is a fully static site (HTML/CSS/JS + CDN dependencies), ideal for **GitHub Pages**.
+
+**Deployment target**  
+`https://<username>.github.io/Pupil2PSF/`
+
+**Pre‑host checklist**
+- [ ] All resource paths are **relative** (e.g., `./js/main.js`, `./css/style.css`)
+- [ ] `index.html` lives at the repo root
+- [ ] No local file references or build steps required
+- [ ] A concise **README.md** exists (project goal, quick start, screenshots/GIF, Pages link)
+
+**Enabling Pages**
+1. Repo → **Settings → Pages**
+2. **Build and deployment**: *Deploy from a branch*
+3. **Branch**: `main` & **Folder**: `/ (root)`
+4. Save; verify live URL after publish
+
+---
+
 ## 🧱 Architecture Summary
 
 **Canvas & Rendering**
@@ -95,95 +108,11 @@ Add a crisp **README.md**; host on **GitHub Pages**; sanity‑test in Chrome/Fir
 - Auto‑update modes: standard (on commit), turbo (throttled during interactions)
 - Transmission is a first‑class property (0–100%), inferred for legacy objects
 
-**Key pipelines**
+**Key pipeline**
 ```
 User Drawing → Fabric Objects → Rasterization (Float32, grayscale)
 → 2D FFT → |F|^2 → fftshift → tone mapping → colormap → Display
 ```
-
----
-
-## ✅ Testing Philosophy & Strategy
-
-**Goals**
-- **Correctness** of math (FFT, fftshift, tone mapping)
-- **Stability** across browsers
-- **Pedagogical integrity** (outputs align with expected qualitative optics)
-- **Performance** remains interactive at target sizes
-
-**Testing tiers** (lightweight, no build tools required)
-1. **Smoke Tests (Runner Page)**  
-   - `tests/runner.html` loads ES modules and runs assertions; on‑screen pass/fail.
-   - Verifies app boot, renders a small (64–128 px) PSF without exceptions.
-2. **Numeric Invariants (Unit‑style)**  
-   - **Energy/Parseval** (unitary FFT):  
-     `sum(intensity) ≈ sum(input^2)` within `1e-6 * sum(input^2)` tolerance.  
-   - **Non‑negativity**: Intensity map ≥ 0; NaN/Inf disallowed.  
-   - **Monotonic tone mapping**: Order of pixel intensities preserved after tone map.  
-   - **fftshift center**: For uniform pupil, peak near `[N/2, N/2]`.
-3. **Scenario Checks (Qualitative → Quantified)**  
-   - **Point pupil** → nearly uniform PSF (low variance across field).  
-   - **Two‑point/line pupil** → fringes detectable: 1D FFT of PSF line has a strong off‑zero peak.  
-   - **Circular pupil** → radial symmetry: angular variance of radial profile below threshold.
-4. **Performance Budgets (reference machine)**  
-   - 512 px: median render < **50 ms**; 1024 px: < **150 ms**; 2048 px: < **500 ms** (on release).  
-   - Collect with `performance.now()`; print simple report in the runner.
-5. **Cross‑Browser Matrix**  
-   - Chrome/Firefox/Safari/Edge: numeric sums within small relative tolerance (e.g., 1e‑5); no console errors.
-6. **Accessibility Quick Checks**  
-   - Keyboard focus order reaches all controls; visible focus; colorbar labels readable (contrast ≥ AA).
-
-**Determinism**
-- Provide a `TEST_MODE` flag to disable throttling and random brush variance.
-- If randomness is needed, seed via a fixed PRNG (e.g., `mulberry32(seed)`).
-
-**Minimal test harness structure**
-```
-tests/
-├─ runner.html      # loads modules, prints results
-├─ assert.js        # tiny helpers: assert(), approxEqual()
-├─ fft.spec.js      # energy, non-negativity, fftshift, tone map
-└─ scenarios.spec.js# point, double-slit, circle symmetry checks
-```
-
-**Example: `tests/assert.js`**
-```js
-export function assert(cond, msg) {
-  if (!cond) throw new Error(msg || "Assertion failed");
-}
-export function approxEqual(a, b, rel = 1e-6, abs = 1e-12) {
-  const diff = Math.abs(a - b);
-  return diff <= Math.max(abs, rel * Math.max(1, Math.abs(a), Math.abs(b)));
-}
-```
-
-**Example: Energy invariant (unitary FFT)**
-```js
-import { fft2 } from "../js/fft.js";
-import { assert, approxEqual } from "./assert.js";
-
-export function testEnergyUnitary(real, imag, N) {
-  // input power
-  let Ein = 0;
-  for (let i = 0; i < real.length; i++) Ein += real[i] * real[i] + imag[i] * imag[i];
-
-  // FFT (unitary) then intensity
-  const { real: Fr, imag: Fi } = fft2(real, imag, N);
-  let Eout = 0;
-  for (let i = 0; i < Fr.length; i++) Eout += Fr[i] * Fr[i] + Fi[i] * Fi[i];
-
-  assert(approxEqual(Ein, Eout, 1e-6), `Energy mismatch: in=${Ein}, out=${Eout}`);
-}
-```
-
-**How to run**
-- Open `tests/runner.html` in any browser; view pass/fail summary and console output.
-- Keep tests < 1s total so they’re easy to run often.
-
-**Claude directives for testing**
-- When editing `fft.js` or tone mapping: **add or update relevant tests** in `tests/`.
-- Keep tests **framework‑free** (browser‑native) unless explicitly asked to add Jest/Vitest.
-- Prioritize invariants over pixel‑perfect comparisons to avoid false failures.
 
 ---
 
@@ -245,7 +174,7 @@ When planning or editing:
 2. **Honor modular boundaries**; do not re‑monolithize.
 3. **Avoid adding build tools or frameworks** unless explicitly requested.
 4. **Prefer standard Web APIs and CDN libs** we already use.
-5. **Generate a plan** (`/plan`) before multi‑file refactors; then apply focused diffs.
+5. **First: produce a concise plan** for multi‑file changes; **then** implement.
 6. **Keep diffs minimal and commit‑ready**; group related changes logically.
 7. **Ask for confirmation** when behavior changes might affect rendering output.
 8. **Respect accessibility** (contrast, keyboard navigation, aria labels where appropriate).
@@ -256,7 +185,7 @@ When planning or editing:
 ## 👥 Collaboration Guidelines (human + Claude)
 
 - Keep **this file** up‑to‑date (focus, milestones, conventions).  
-- Use `/describe` to summarize modules; `/plan` for refactors; `/refactor` for agreed edits.  
+- Prefer natural-language requests; avoid assuming slash commands exist.  
 - Favor small, reviewable PRs.  
 - Before merges, test in Chrome + Firefox at minimum (512 & 1024 grids).
 
@@ -283,51 +212,53 @@ commit_policy:
 
 ---
 
-## 🧪 Verification & Manual QA (quick checks)
+## ✅ Testing Philosophy & Strategy
 
-- **Numerical sanity**: single point (uniform PSF); filled circle (qualitative Airy falloff).
-- **Performance sanity**: 512px live < ~50 ms; 1024px acceptable in turbo; 2048px acceptable post‑interaction.
-- **Cross‑browser**: No console errors; energy invariant holds within tolerance.
-- **A11y**: Tab order reaches all controls; focus ring visible; colorbar text readable.
+**Goals**
+- **Correctness** of math (FFT, fftshift, tone mapping)
+- **Stability** across browsers
+- **Pedagogical integrity** (outputs align with expected qualitative optics)
+- **Performance** remains interactive at target sizes
 
----
+**Testing tiers** (lightweight, no build tools required)
+1. **Smoke Tests (Runner Page)**  
+   - `tests/runner.html` loads ES modules and runs assertions; on‑screen pass/fail.
+2. **Numeric Invariants (Unit‑style)**  
+   - **Energy/Parseval** (unitary FFT): `sum(|F|^2) ≈ sum(input^2)` within tolerance.  
+   - **Non‑negativity**: Intensity map ≥ 0; NaN/Inf disallowed.  
+   - **Monotonic tone mapping**: Order of pixel intensities preserved after tone map.  
+   - **fftshift center**: For uniform pupil, peak near `[N/2, N/2]`.
+3. **Scenario Checks (Qualitative → Quantified)**  
+   - **Point pupil** → near-uniform PSF (low variance).  
+   - **Double slit** → clear fringes (1D FFT of PSF line has off-zero peak).  
+   - **Circular pupil** → radial symmetry (low angular variance).
+4. **Performance Budgets** (reference machine)  
+   - 512 px: median render < **50 ms**; 1024 px: < **150 ms**; 2048 px: < **500 ms** (on release).  
+5. **Cross‑Browser Matrix**  
+   - Chrome/Firefox/Safari/Edge: no console errors; sums within tolerance.
+6. **Accessibility Quick Checks**  
+   - Keyboard focus order reaches all controls; visible focus; colorbar labels readable.
 
-## 🧰 Common Tasks (recipes)
+**Determinism**
+- Provide a `TEST_MODE` flag to disable throttling and random brush variance.
+- If randomness is needed, seed via a fixed PRNG.
 
-### Add a Tooltip (educational hint)
-1. Add `title` attribute to control, or a custom tooltip component in `ui.js`.
-2. Keep copy simple: 1–2 sentences, no jargon, link to “Help” panel for more.
-
-### Add a Preset Aperture
-1. Implement a builder in `tools.js` (e.g., `makeCentralObscuration({R, r})`).
-2. Register preset in a menu list (`ui.js`), including a short description.
-3. Call builder, add shapes to Fabric canvas, then trigger render.
-
-### Add a Credits Footer
-- Minimal HTML snippet inside `index.html` footer region:
-```html
-<footer class="credits">
-  Pupil2PSF · © 2025 · <a href="https://github.com/<username>/Pupil2PSF" target="_blank" rel="noopener">GitHub</a>
-  · Built with <a href="https://fabricjs.com/" target="_blank" rel="noopener">Fabric.js</a> and
-  <a href="https://github.com/indutny/fft.js" target="_blank" rel="noopener">fft.js</a>.
-</footer>
+**Minimal test harness structure**
 ```
-- Add small, muted styling in `style.css`; ensure good contrast and mobile wrapping.
-
-### Prepare README.md (before hosting)
-- **What**: one‑paragraph description + screenshot/GIF
-- **Why**: educational goals and demo scenarios
-- **How**: open `index.html` locally or visit GitHub Pages URL
-- **Credits**: Fabric.js, fft.js, author(s)
-- **License**: MIT (if chosen)
+tests/
+├─ runner.html
+├─ assert.js
+├─ fft.spec.js
+└─ scenarios.spec.js
+```
 
 ---
 
 ## 🎨 Visual Polish Guidelines (M2 inputs)
 
-- **Typography**: a clear sans‑serif (e.g., Inter, system stack). Use 14–16px base, 20–24px for section titles.  
+- **Typography**: clear sans‑serif (system stack or Inter). 14–16px base; 20–24px section titles.  
 - **Spacing**: generous padding around canvases; 8px grid for controls; group related controls in cards.  
-- **Color**: neutral UI (grays); accent color for active tool; ensure WCAG AA contrast for text (≥ 4.5:1).  
+- **Color**: neutral UI (grays); accent color for active tool; ensure WCAG AA contrast.  
 - **Icons**: lightweight SVGs for tools; keep labels visible for clarity.  
 - **Colorbar**: crisp ticks; readable numeric labels; responsive width on small screens.
 
@@ -391,9 +322,7 @@ Please attribute external libraries in the credits footer and README:
 
 ## 🔎 Appendix: Quick Module Notes (post‑M1 targets)
 
-- `fft.js` — `fft2(real, imag, N)`, `fftshift2D(array, N)`, `applyToneMap(intensity, mode, clipP)`, `buildColorbarTicks(mode, vmax)`  
-- `tools.js` — `ToolRegistry`, `applyTransmission(obj, t)`, tool lifecycles (`init/update/finalize`), preset builders  
+- `fft.js` — `fft2(real, imag, N)`, `fftshift2D(array, N)`, tone map & tick helpers  
+- `tools.js` — `ToolRegistry`, `applyTransmission(obj, t)`, tool lifecycles, preset builders  
 - `ui.js` — `selectTool(name)`, event wiring, auto‑render throttle, colorbar/legend renderers  
 - `main.js` — boot sequence, canvas setup, wiring modules together
-
----
