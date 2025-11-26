@@ -46,9 +46,18 @@ function destroyTestCanvas(canvas, canvasEl) {
 }
 
 /**
- * Rasterize test canvas to grayscale array (simplified version of ui.js function)
+ * Rasterize test canvas to grayscale array (matches production ui.js function)
  */
 function rasterizeTestCanvas(canvas, size = 512) {
+  // Hide point objects before rendering (they'll be added as single pixels later)
+  const pointObjects = [];
+  canvas.getObjects().forEach(obj => {
+    if (obj.customType === 'point') {
+      pointObjects.push({ obj, visible: obj.visible });
+      obj.set({ visible: false });
+    }
+  });
+
   const hiddenCanvas = document.createElement('canvas');
   const ctx = hiddenCanvas.getContext('2d', { willReadFrequently: true });
   hiddenCanvas.width = size;
@@ -60,9 +69,15 @@ function rasterizeTestCanvas(canvas, size = 512) {
   ctx.fillStyle = '#000'; // black background
   ctx.fillRect(0, 0, size, size);
 
-  // Draw the canvas
+  // Draw the canvas (excluding hidden point objects)
   canvas.renderAll();
   ctx.drawImage(canvas.lowerCanvasEl, 0, 0, size, size);
+
+  // Restore point objects visibility
+  pointObjects.forEach(({ obj, visible }) => {
+    obj.set({ visible });
+  });
+  if (pointObjects.length > 0) canvas.renderAll();
 
   // Read pixels -> grayscale
   const imageData = ctx.getImageData(0, 0, size, size).data;

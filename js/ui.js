@@ -351,6 +351,15 @@ export function rasterizeCanvasToArray(size = 512, includeDraft = false) {
     });
   }
 
+  // ---- Hide point objects before rendering (they'll be added as single pixels later) ----
+  const pointObjects = [];
+  canvas.getObjects().forEach(obj => {
+    if (obj.customType === 'point') {
+      pointObjects.push({ obj, visible: obj.visible });
+      obj.set({ visible: false });
+    }
+  });
+
   // Ensure Fabric's lower layer is current
   canvas.renderAll();
 
@@ -367,8 +376,14 @@ export function rasterizeCanvasToArray(size = 512, includeDraft = false) {
   ctx.fillStyle = (pupilBackground === 'black') ? '#000' : '#fff';
   ctx.fillRect(0, 0, size, size);
 
-  // Draw the object layer (lower canvas)
+  // Draw the object layer (lower canvas, excluding hidden points)
   ctx.drawImage(canvas.lowerCanvasEl, 0, 0, size, size);
+
+  // ---- Restore point objects visibility ----
+  pointObjects.forEach(({ obj, visible }) => {
+    obj.set({ visible });
+  });
+  if (pointObjects.length > 0) canvas.renderAll();
 
   // Include the brush overlay ONLY while actually scribbling
   if (includeDraft && isScribblingNow()) {
