@@ -57,9 +57,15 @@ export function applyTransmission(obj, t, context = {}) {
     obj.set({ stroke: gray });
   } else {
     obj.set({ fill: gray });
-    // remove outlines if indistinguishable from BG
-    if ('stroke' in obj) obj.set('stroke', nearBg ? null : obj.stroke);
-    if ('strokeWidth' in obj) obj.set('strokeWidth', nearBg ? 0 : (obj.strokeWidth || 0));
+    // Fix: Remove stroke/outline when object is indistinguishable from background.
+    // This prevents invisible shapes from blocking interactions or appearing as artifacts.
+    // Using obj.set({key: value}) syntax instead of obj.set(key, value) for Fabric.js compatibility.
+    if ('stroke' in obj) {
+      obj.set({ stroke: nearBg ? null : obj.stroke });
+    }
+    if ('strokeWidth' in obj) {
+      obj.set({ strokeWidth: nearBg ? 0 : (obj.strokeWidth || 0) });
+    }
   }
 }
 
